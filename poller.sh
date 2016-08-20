@@ -22,10 +22,11 @@ DEF=$(tput sgr0)
 # tty write helpers
 
 pt(){
-  echo -en "${DARKGRAY}[${MAGENTA}pm${DARKGRAY}]\
-[${GRAY}$(date "+%b %d %H:%M:%S")${DARKGRAY}]\
-[${MAGENTA}${pt_action}${DARKGRAY}]\
-[${GREEN}${pt_host}${DARKGRAY}]${DEF}# "
+  pmprompt="${DARKGRAY}[${MAGENTA}pm${DARKGRAY}]"
+  pmprompt="${pmprompt}[${GRAY}$(date "+%b %d %H:%M:%S")${DARKGRAY}]"
+  pmprompt="${pmprompt}[${MAGENTA}${pt_action}${DARKGRAY}]"
+  pmprompt="${pmprompt}[${GREEN}${pt_host}${DARKGRAY}]${DEF}# "
+  echo -en "${pmprompt}"
 }
 
 pt_set_host(){
@@ -148,7 +149,7 @@ ping_engine(){
 init(){
   pt_set_action "init"
   trap clean_up SIGINT SIGTERM
-  fver "hosts.cfg" || pr "No hosts.cfg found."
+  fver "hosts.cfg" || pr f "No hosts.cfg found."
   longest_hostname="$(awk '{ if (length($0) > max) {max = length($0); maxline = $0} } END { print maxline }' hosts.cfg | wc -c)"
 }
 
