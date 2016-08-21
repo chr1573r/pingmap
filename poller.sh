@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# to-do move cfg vars to file
+idle_wait=15
 
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
@@ -163,6 +165,6 @@ while true; do
   pr p "Starting poll."
   ping_engine
   pt_set_action "main"
-  pr p "Idle wait"
-  sleep 10
+  pr p "Idle wait ${idle_wait}"
+  sleep ${idle_wait}
 done
