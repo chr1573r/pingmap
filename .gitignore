@@ -2,3 +2,7 @@ ping_engine.export
 ping_engine.mutex
 hosts.cfg
 pingmap.cfg
+current.map.ansi
+current.map
+maps/*
+tmp/*
