@@ -54,6 +54,14 @@ mod_date(){
   [[ "${platform}" == "BSD" ]] && date -r $(stat -f "%m" "$1")
 }
 
+dver(){
+  [[ -d "$1" ]]
+}
+
+fver(){
+  [[ -f "$1" ]]
+}
+
 refresh(){
   old_sum=$(sumbin ping_engine.export)
   #echo "Waiting for file change"
@@ -194,6 +202,12 @@ tput civis
 pmprompt="${DARKGRAY}[${MAGENTA}pm-viewer${DARKGRAY}]${DEF}"
 header="$pmprompt @ $(hostname) - Map:"
 echo -e  "$pmprompt init.."
+fver viewer.sh || (echo -e  "$pmprompt FATAL: Current directory must be the same that viewer.sh resides in." && exit )
+dver maps || mkdir maps
+dver maps || (echo -e "$pmprompt FATAL: Directory maps does not exist" && exit )
+dver tmp || mkdir tmp
+dver tmp || (echo -e "$pmprompt FATAL: Directory tmp does not exist" && exit )
+
 previous_term_width=$(tput cols)
 previous_term_height=$(tput lines)
 
