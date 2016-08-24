@@ -67,26 +67,31 @@ refresh(){
 
 ansi_inject(){
   #IFS=$'\n'
-  cp "$1" tmp/current.map
-  while read host; do
-    if [[ -n "$host" ]]; then
-      current_host=$(echo "$host" | cut -f1 -d:)
-      host_status=$(echo "$host" | cut -f2 -d:)
-      refresh_dates
-      if [[ "$host_status" != "-" ]]; then
-        sed -i.ansi -e "s/${current_host}/\\${GREEN}${current_host}\\${DEF}/g" tmp/current.map
-      else
-        sed -i.ansi -e "s/${current_host}/\\${RED}${current_host}\\${DEF}/g" tmp/current.map
+  if [[ "$term_width" -lt "$map_width" || "$term_height" -lt "$(( map_height + top_padding ))" ]]; then
+    echo "${YELLOW}$(basename "$map") does not fit the current terminal" >tmp/current.map
+    echo "The terminal is ${term_width}x${term_height}, pm-viewer needs ${map_width}x$(( map_height + top_padding )) to display this map.${DEF}" >>tmp/current.map
+    calc_dimensions tmp/current.map && refresh_dates
+  else
+    cp "$1" tmp/current.map
+    while read host; do
+      if [[ -n "$host" ]]; then
+        current_host=$(echo "$host" | cut -f1 -d:)
+        host_status=$(echo "$host" | cut -f2 -d:)
+        refresh_dates
+        if [[ "$host_status" != "-" ]]; then
+          sed -i.ansi -e "s/${current_host}/\\${GREEN}${current_host}\\${DEF}/g" tmp/current.map
+        else
+          sed -i.ansi -e "s/${current_host}/\\${RED}${current_host}\\${DEF}/g" tmp/current.map
+        fi
+        refresh_dates
       fi
-      refresh_dates
-    fi
-
-  done<"ping_engine.export"
+    done<"ping_engine.export"
+  fi
   #unset IFS
 }
 
 calc_dimensions(){
-  unset longest_line_length
+  longest_line_length=0
 
   # calculate longest line. Avoiding wc -L for compatibilty
   while read -r mapline; do
@@ -199,7 +204,7 @@ while true; do
     ansi_inject "$map" && refresh_dates
     render_header && refresh_dates
     render_map "tmp/current.map" && refresh_dates
-    idle_wait 4
+    idle_wait 5
   done
   #refresh
 done
