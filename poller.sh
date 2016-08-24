@@ -145,7 +145,7 @@ ping_engine(){
   for ping_result in "${ping_results[@]}"; do
     echo "${ping_result}" >> "tmp/ping_engine.export"
   done
-  tail -r tmp/ping_engine.export > ping_engine.mutex
+  sort -r tmp/ping_engine.export > ping_engine.mutex
   mv "ping_engine.mutex" "ping_engine.export"
   pr p "Ping results written to file"
 }
