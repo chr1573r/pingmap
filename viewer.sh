@@ -4,7 +4,7 @@
 DEF="\x1b[0m"
 GRAY="\x1b[37;0m"
 LIGHTBLACK="\x1b[30;01m"
-BLACK="\x1b[30;11m"
+DARKGRAY="\x1b[30;11m"
 LIGHTBLUE="\x1b[34;01m"
 BLUE="\x1b[34;11m"
 LIGHTCYAN="\x1b[36;01m"
@@ -13,8 +13,8 @@ LIGHTGRAY="\x1b[37;01m"
 WHITE="\x1b[37;11m"
 LIGHTGREEN="\x1b[32;01m"
 GREEN="\x1b[32;11m"
-LIGHTPURPLE="\x1b[35;01m"
-PURPLE="\x1b[35;11m"
+LIGHTMAGENTA="\x1b[35;01m"
+MAGENTA="\x1b[35;11m"
 LIGHTRED="\x1b[31;01m"
 RED="\x1b[31;11m"
 LIGHTYELLOW="\x1b[33;01m"
@@ -67,7 +67,7 @@ ansi_inject(){
   while read host; do
     if [[ -n "$host" ]]; then
       current_host=$(echo "$host" | cut -f1 -d:)
-      host_status=$(echo "$host" | cut -f1 -d:)
+      host_status=$(echo "$host" | cut -f2 -d:)
       if [[ "$host_status" != "-" ]]; then
         sed -i.ansi -e "s/${current_host}/\\${GREEN}${current_host}\\${DEF}/g" tmp/current.map
       else
@@ -91,6 +91,10 @@ calc_dimensions(){
   term_width=$(tput cols)
   term_height=$(tput lines)
 
+  [[ "$term_width" -ne "$previous_term_width" ]] || [[ "$term_height" -ne "$previous_term_height" ]] && echo -e "$pmprompt Terminal changed size, adjusting.." && reset && tput civis
+  previous_term_width=$term_width
+  previous_term_height=$term_height
+
   map_width="$longest_line_length"
   map_height="$(wc -l <"$1" | tr -d ' ')"
 
@@ -111,7 +115,7 @@ calc_dimensions(){
 render_header(){
   tput cup 0 0
   tput ech "$((term_width - date_field_length))"
-  echo "$header $map ${map_width}x${map_height}"
+  echo -e "$header $map ${map_width}x${map_height}"
 }
 
 render_map(){
@@ -169,7 +173,8 @@ clean_up(){
 trap clean_up SIGINT SIGTERM
 reset
 tput civis
-header="pm-viewer running on $(hostname) - Map: "
+pmprompt="${DARKGRAY}[${MAGENTA}pm-viewer${DARKGRAY}]${DEF}"
+header="$pmprompt running on $(hostname) - Map:"
 
 #main
 while true; do
