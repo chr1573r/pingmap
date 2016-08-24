@@ -128,7 +128,7 @@ calc_dimensions(){
 render_header(){
   tput cup 0 0
   tput ech "$((term_width - date_field_length))"
-  echo -e "$header $map ${map_width}x${map_height}"
+  echo -e "$header $map"
 }
 
 render_map(){
@@ -192,7 +192,7 @@ trap clean_up SIGINT SIGTERM
 reset
 tput civis
 pmprompt="${DARKGRAY}[${MAGENTA}pm-viewer${DARKGRAY}]${DEF}"
-header="$pmprompt running on $(hostname) - Map:"
+header="$pmprompt @ $(hostname) - Map:"
 echo -e  "$pmprompt init.."
 previous_term_width=$(tput cols)
 previous_term_height=$(tput lines)
