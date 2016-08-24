@@ -137,15 +137,14 @@ render_map(){
     (( ypos++ ))
   done
   refresh_dates
+  unset line_c
   while read -r line; do
-    tput cuf "$map_center_align_xcord"
+    (( line_c++ ))
+    tput cup $ypos "$map_center_align_xcord"
     tput el1
     tput el
-    echo -e "$line"
-    (( ypos++ ))
+    [[ "$line_c" -eq "$map_height" ]] && echo -e -n "$line" || echo -e "$line" && (( ypos++ ))
   done<"$1"
-
-  (( ypos-- ))
 
   until [[ "$ypos" -eq "$(( term_height - bottom_padding ))" ]]; do
     tput cup $ypos 0
@@ -200,7 +199,7 @@ while true; do
     ansi_inject "$map" && refresh_dates
     render_header && refresh_dates
     render_map "tmp/current.map" && refresh_dates
-    idle_wait 5
+    idle_wait 4
   done
   #refresh
 done
