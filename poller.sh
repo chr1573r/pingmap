@@ -88,6 +88,7 @@ $pr_highlight && render="${render}${DEF}$2 ${CYAN}${@:3}${DEF}" || render="${ren
 $pr_aftercolor && render="${render} ${YELLOW}"
 
 ( $pr_ommit_newline || $pr_aftercolor ) && echo -en "$render" || echo -e "$render${DEF}"
+$pr_fatal && exit
 
 }
 
@@ -111,7 +112,7 @@ fver(){
 
 clean_up() {
   pr p
-  pr f "Caught trap, aborting!"
+  pr f "Caught trap, pm poller terminated."
   exit
 }
 
@@ -151,7 +152,8 @@ ping_engine(){
 init(){
   pt_set_action "init"
   trap clean_up SIGINT SIGTERM
-  fver "hosts.cfg" || pr f "No hosts.cfg found."
+  fver "hosts.cfg" || pr f "No hosts.cfg found. Can not proceed without any hosts to poll"
+  hash fping 2>/dev/null || pr f "Poller requres fping. Please install."
   longest_hostname="$(awk '{ if (length($0) > max) {max = length($0); maxline = $0} } END { print maxline }' hosts.cfg | wc -c)"
 }
 
