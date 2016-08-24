@@ -108,7 +108,7 @@ calc_dimensions(){
   map_height="$(wc -l <"$1" | tr -d ' ')"
 
   top_padding="2"
-  bottom_padding="1"
+  bottom_padding="0"
 
   map_center_align_xcord="$(( (term_width - map_width) / 2 ))"
   map_center_align_ycord="$(( (term_height + top_padding - map_height) / 2 ))"
