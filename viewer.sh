@@ -163,7 +163,7 @@ refresh_dates(){
   tput cup 1 $date_xcord
   current_mod_date="$(mod_date ping_engine.export)"
   [[ "$current_mod_date" != "$previous_mod_date" ]] && SECONDS=0 && previous_mod_date="$current_mod_date"
-  echo -e -n "Last update:  $([[ "$SECONDS" -gt "$map_data_age_threshold" ]] && echo -e "$YELLOW${current_mod_date}$DEF" || echo -e "${current_mod_date}")"
+  [[ "$SECONDS" -gt "$map_data_age_threshold" ]] && echo -e "${YELLOW}Last update:  ${current_mod_date}$DEF" || echo -e "Last update:  ${current_mod_date}"
 
   tput rc
 }
