@@ -141,10 +141,11 @@ ping_engine(){
   pt_set_action "ping-engine"
   pr p "Writing to file"
 
-  echo > "ping_engine.mutex"
+  echo > "tmp/ping_engine.export"
   for ping_result in "${ping_results[@]}"; do
-    echo "${ping_result}" >> "ping_engine.mutex"
+    echo "${ping_result}" >> "tmp/ping_engine.export"
   done
+  tail -r tmp/ping_engine.export > ping_engine.mutex
   mv "ping_engine.mutex" "ping_engine.export"
   pr p "Ping results written to file"
 }
@@ -153,7 +154,10 @@ init(){
   pt_set_action "init"
   trap clean_up SIGINT SIGTERM
   fver "hosts.cfg" || pr f "No hosts.cfg found. Can not proceed without any hosts to poll"
+  [[ "$(whoami)" != 'root' ]] && pr w "Some versions of fping might require root for read-access."
   hash fping 2>/dev/null || pr f "Poller requres fping. Please install."
+  dver tmp || mkdir tmp
+  dver tmp || pr f "Failed to create tmp directory"
   longest_hostname="$(awk '{ if (length($0) > max) {max = length($0); maxline = $0} } END { print maxline }' hosts.cfg | wc -c)"
 }
 
