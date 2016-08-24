@@ -20,6 +20,9 @@ RED="\x1b[31;11m"
 LIGHTYELLOW="\x1b[33;01m"
 YELLOW="\x1b[33;11m"
 
+#move this into seperate cfg file
+map_data_age_threshold=60
+
 #todo
 #map term size validations
 #multiview for maps
@@ -55,7 +58,8 @@ refresh(){
   old_sum=$(sumbin ping_engine.export)
   #echo "Waiting for file change"
   until [[ $(sumbin ping_engine.export) != "${old_sum}" ]]; do
-    date_snooze 1
+    sleep 1
+    refresh_dates
   done
   #echo "File changed!"
   export ping_results=$(cat ping_engine.export)
@@ -68,11 +72,13 @@ ansi_inject(){
     if [[ -n "$host" ]]; then
       current_host=$(echo "$host" | cut -f1 -d:)
       host_status=$(echo "$host" | cut -f2 -d:)
+      refresh_dates
       if [[ "$host_status" != "-" ]]; then
         sed -i.ansi -e "s/${current_host}/\\${GREEN}${current_host}\\${DEF}/g" tmp/current.map
       else
         sed -i.ansi -e "s/${current_host}/\\${RED}${current_host}\\${DEF}/g" tmp/current.map
       fi
+      refresh_dates
     fi
 
   done<"ping_engine.export"
@@ -90,6 +96,9 @@ calc_dimensions(){
 
   term_width=$(tput cols)
   term_height=$(tput lines)
+  date_field_length=$(( 29 + 14 ))
+  date_xcord=$(( term_width - date_field_length ))
+  refresh_dates
 
   [[ "$term_width" -ne "$previous_term_width" ]] || [[ "$term_height" -ne "$previous_term_height" ]] && echo -e "$pmprompt Terminal changed size, adjusting.." && reset && tput civis
   previous_term_width=$term_width
@@ -103,8 +112,7 @@ calc_dimensions(){
 
   map_center_align_xcord="$(( (term_width - map_width) / 2 ))"
   map_center_align_ycord="$(( (term_height + top_padding - map_height) / 2 ))"
-  date_field_length=$(( 29 + 14 ))
-  date_xcord=$(( term_width - date_field_length ))
+
   #echo "map_width $map_width"
   #echo "map_height $map_height"
   #echo "map_center_align_xcord $map_center_align_xcord"
@@ -128,7 +136,7 @@ render_map(){
     tput el
     (( ypos++ ))
   done
-
+  refresh_dates
   while read -r line; do
     tput cuf "$map_center_align_xcord"
     tput el1
@@ -148,18 +156,16 @@ render_map(){
   unset IFS
 }
 
-date_snooze(){
+refresh_dates(){
   tput sc
-  timer=$1
-  while [[ "$timer" -ne 0 ]]; do
-    tput cup 0 $date_xcord
-    echo -e "Current time: $(date)"
-    tput cup 1 $date_xcord
-    echo -e "Map data age: $(mod_date ping_engine.export)"
-    (( timer-- ))
-    sleep 0.9
-  done
+  tput cup 0 $date_xcord
+  echo -e "Current time: $(date)"
+  tput cup 1 $date_xcord
+  current_mod_date="$(mod_date ping_engine.export)"
+  [[ "$current_mod_date" != "$previous_mod_date" ]] && SECONDS=0 && previous_mod_date="$current_mod_date"
+  echo -e -n "Last update:  $([[ "$SECONDS" -gt "$map_data_age_threshold" ]] && echo -e "$YELLOW${current_mod_date}$DEF" || echo -e "${current_mod_date}")"
 
+  tput rc
 }
 
 clean_up(){
@@ -168,22 +174,33 @@ clean_up(){
   exit
 }
 
-
+idle_wait(){
+  idle_c="$1"
+  until [[ "$idle_c" -eq 0 ]]; do
+    sleep 0.5
+    refresh_dates
+    sleep 0.4
+    (( idle_c-- ))
+  done
+}
 #init
 trap clean_up SIGINT SIGTERM
 reset
 tput civis
 pmprompt="${DARKGRAY}[${MAGENTA}pm-viewer${DARKGRAY}]${DEF}"
 header="$pmprompt running on $(hostname) - Map:"
+echo -e  "$pmprompt init.."
+previous_term_width=$(tput cols)
+previous_term_height=$(tput lines)
 
 #main
 while true; do
   for map in maps/*; do
-    calc_dimensions "$map"
-    ansi_inject "$map"
-    render_header
-    render_map "tmp/current.map"
-    date_snooze 5
+    calc_dimensions "$map" && refresh_dates
+    ansi_inject "$map" && refresh_dates
+    render_header && refresh_dates
+    render_map "tmp/current.map" && refresh_dates
+    idle_wait 5
   done
   #refresh
 done
