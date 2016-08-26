@@ -74,7 +74,6 @@ refresh(){
 }
 
 ansi_inject(){
-  #IFS=$'\n'
   if [[ "$term_width" -lt "$map_width" || "$term_height" -lt "$(( map_height + top_padding ))" ]]; then
     echo "${YELLOW}$(basename "$map") does not fit the current terminal" >tmp/current.map
     echo "The terminal is ${term_width}x${term_height}, pm-viewer needs ${map_width}x$(( map_height + top_padding )) to display this map.${DEF}" >>tmp/current.map
@@ -85,17 +84,27 @@ ansi_inject(){
       if [[ -n "$host" ]]; then
         current_host=$(echo "$host" | cut -f1 -d:)
         host_status=$(echo "$host" | cut -f2 -d:)
+        search_pattern="${current_host}"
+        refresh_dates
+        grep_result=$(grep -Eo "${current_host}.{1,1}" "$1")
+        matches="$(echo "$grep_result" | wc -l)"
+        if  [[ "$matches" -gt 1 ]] ; then
+          IFS=$'\n'
+            for match in $grep_result; do
+              [[ "${match: -1}" != "-" ]] && search_pattern="${match}" && break
+            done
+          unset IFS
+        fi
         refresh_dates
         if [[ "$host_status" != "-" ]]; then
-          sed -i.ansi -e "s/${current_host}/\\${GREEN}${current_host}\\${DEF}/g" tmp/current.map
+          sed -i.ansi -e "s/${search_pattern}/\\${GREEN}${search_pattern}\\${DEF}/g" tmp/current.map
         else
-          sed -i.ansi -e "s/${current_host}/\\${RED}${current_host}\\${DEF}/g" tmp/current.map
+          sed -i.ansi -e "s/${search_pattern}/\\${RED}${search_pattern}\\${DEF}/g" tmp/current.map
         fi
         refresh_dates
       fi
-    done<"ping_engine.export"
+    done< <(sort -r ping_engine.export)
   fi
-  #unset IFS
 }
 
 calc_dimensions(){
