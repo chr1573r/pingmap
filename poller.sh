@@ -141,11 +141,10 @@ ping_engine(){
   pt_set_action "ping-engine"
   pr p "Writing to file"
 
-  echo > "tmp/ping_engine.export"
+  echo > "ping_engine.mutex"
   for ping_result in "${ping_results[@]}"; do
-    echo "${ping_result}" >> "tmp/ping_engine.export"
+    echo "${ping_result}" >> "ping_engine.mutex"
   done
-  sort -r tmp/ping_engine.export > ping_engine.mutex
   mv "ping_engine.mutex" "ping_engine.export"
   pr p "Ping results written to file"
 }
