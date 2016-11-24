@@ -141,19 +141,20 @@ gfx(){
           while read -r line; do
             tput el
             tput cuf "$map_center_align_xcord"
-            echo -e "$line"
+            echo -en "$line"
             (( map_lines_rendered++ ))
             if [[ "$map_lines_rendered" == "$map_height" ]]; then
               line_counter=$(( line_counter + map_lines_rendered ))
+            fi
+            if [[ $line_counter -lt $map_viewer_height ]]; then
+              echo -e
             fi
           done<"$1"
         else
           tput el
           (( line_counter++ ))
-          if [[ $line_counter -ne "$map_viewer_height" ]]; then
+          if [[ $line_counter -lt $map_viewer_height ]]; then
             echo -e
-          else
-            echo -n
           fi
         fi
 
@@ -207,7 +208,7 @@ map(){
       if [[ "$map_width" -gt "$map_viewer_width" ]] || [[ "$map_height" -gt "$map_viewer_height" ]]; then
         map_to_big_error=true
         echo "${YELLOW}$(basename "$current_map") does not fit the current terminal" >tmp/current.map
-        echo "The terminal is ${terminal_width}x${terminal_height}, pm-viewer needs ${map_width}x${map_height} to display this map.${DEF}" >>tmp/current.map
+        echo "The terminal is ${terminal_width}x${terminal_height}, pm-viewer needs a terminal size of $(( map_width + 2 ))x$(( map_height + 2 )) to display this map.${DEF}" >>tmp/current.map
 
         map calculate_length "$1"
         map calculate_height "$1"
@@ -263,7 +264,7 @@ gfx_meta(){
       terminal_width="$(tput cols)"
       terminal_height="$(tput lines)"
 
-      map_viewer_width="$terminal_width"
+      map_viewer_width="$(( $terminal_width - 2 ))"
       map_viewer_height="$(( terminal_height - 2 ))"
 
       date_field_length="$(( date_prefix_length + date_length ))"
