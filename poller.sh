@@ -134,7 +134,7 @@ ping_engine(){
     else
       pr p "Host is ${RED}down${DEF}"
     fi
-    ping_results+=("$current_host:$host_status")
+    ping_results+=("$current_host,$host_status")
   done
   unset IFS
   pt_set_host ""
