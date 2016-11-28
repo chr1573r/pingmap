@@ -304,7 +304,7 @@ adaptive_wait(){
   $first_run && first_run=false && return 0
   #current_map_previous_process_time="map_${map_no}_previous_process_time"
   #idle_wait_deductable="${!current_map_previous_process_time}"
-  idle_wait_deductable="$(cat tmp/map_${map_no}_previous_process_time)"
+  idle_wait_deductable="$([[ -f "tmp/map_${map_no}_previous_process_time" ]] && cat tmp/map_${map_no}_previous_process_time)"
   if [[ "$idle_wait_deductable" -gt 0 ]]; then
     idle_c=$(( minimum_map_display_duration - idle_wait_deductable ))
     #echo "Processtime was $idle_wait_deductable"
