@@ -2,7 +2,7 @@
 
 #move this to seperate cfg
 map_data_age_threshold=60
-minimum_map_display_duration=10
+minimum_map_display_duration=15
 
 # Pretty colors for the terminal:
 DEF="\x1b[0m"
@@ -75,8 +75,8 @@ gfx(){
       tput rc
       ;;
 
-      render_last_update)
-        #debug
+      render_last_updated)
+        #debug map display
         #tput sc
         #tput cup 1 0 #"$date_field_time_startpos"
         #echo -n "TW: $terminal_width, TH: $terminal_height, "
@@ -85,6 +85,20 @@ gfx(){
         #echo -n "MTBE: $($map_to_big_error && echo 1 || echo 0), "
         #echo -n "LC: $line_counter, YMAP: $map_center_align_ycord, XMAP: $map_center_align_xcord, MLR: $map_lines_rendered     "
         #tput rc
+
+        #debug adaptive_wait
+        #tput sc
+        #tput cup 1 0
+        #echo "map_name                            $map                   "
+        #echo "map_no                              $map_no                "
+        #echo "current_map_previous_process_time   $current_map_previous_process_time                "
+        #echo "!current_map_previous_process_time  ${!current_map_previous_process_time}    "
+        #echo "idle_wait_deductable                $idle_wait_deductable                "
+        #echo "idle_c                              $idle_c                "
+        #echo "map_1_previous_process_time         $map_1_previous_process_time"
+        #tput rc
+        #return 0
+
         current_mod_date="$(get_mod_date ping_engine.export)"
         tput sc
         tput cup 1 "$date_field_time_startpos"
@@ -175,8 +189,10 @@ map(){
       map pre_flight_check tmp/current.map
       $map_to_big_error || map ansi_inject tmp/current.map
       map_process_endtime="$(date +%s)"
-      map_process_duration="$(( map_process_endtime - map_process_starttime ))"
-
+      echo "$(( map_process_endtime - map_process_starttime ))" > "tmp/map_${map_no}_previous_process_time"
+      #declare -x "map_${map_no}_previous_process_time=$(( map_process_endtime - map_process_starttime ))"
+      #echo "$map_1_previous_process_time, $map_2_previous_process_time, $map_3_previous_process_time"
+      #sleep 2
     ;;
 
     calculate_length)
@@ -264,7 +280,7 @@ gfx_meta(){
       terminal_width="$(tput cols)"
       terminal_height="$(tput lines)"
 
-      map_viewer_width="$(( $terminal_width - 2 ))"
+      map_viewer_width="$(( terminal_width - 2 ))"
       map_viewer_height="$(( terminal_height - 2 ))"
 
       date_field_length="$(( date_prefix_length + date_length ))"
@@ -284,10 +300,20 @@ gfx_meta(){
   esac
 }
 
-idle_wait(){
+adaptive_wait(){
   $first_run && first_run=false && return 0
-  idle_c="$1"
-  until [[ "$idle_c" -eq 0 ]]; do
+  #current_map_previous_process_time="map_${map_no}_previous_process_time"
+  #idle_wait_deductable="${!current_map_previous_process_time}"
+  idle_wait_deductable="$(cat tmp/map_${map_no}_previous_process_time)"
+  if [[ "$idle_wait_deductable" -gt 0 ]]; then
+    idle_c=$(( minimum_map_display_duration - idle_wait_deductable ))
+    #echo "Processtime was $idle_wait_deductable"
+    #echo "idle_c set to $idle_c"
+  else
+    idle_c="$minimum_map_display_duration"
+  fi
+  "$map_to_big_error" && idle_c=3
+  until [[ "$idle_c" -le 0 ]]; do
     sleep 0.5
     gfx render_current_time
     sleep 0.4
@@ -318,7 +344,7 @@ init(){
   gfx init
   gfx render_map_name "(initializing)"
   gfx render_current_time
-  gfx render_last_update
+  gfx render_last_updated
 
 }
 
@@ -332,12 +358,14 @@ clean_up(){
 init
 
 while true; do
+  unset map_no
   for map in maps/*; do
+    (( map_no++ ))
+    adaptive_wait
     map process "$map"
-    idle_wait $(( minimum_map_display_duration - map_process_duration ))
     gfx condreset && map process "$map"
     gfx render_current_time
-    gfx render_last_update
+    gfx render_last_updated
     gfx render_map_name "$map"
     gfx map_render tmp/current.map
   done
