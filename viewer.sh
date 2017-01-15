@@ -2,7 +2,7 @@
 
 #move this to seperate cfg
 map_data_age_threshold=60
-minimum_map_display_duration=15
+minimum_map_display_duration=10
 
 # Pretty colors for the terminal:
 DEF="\x1b[0m"
@@ -37,6 +37,14 @@ set_platform(){
 get_mod_date(){
   [[ "${platform}" == "Linux" ]] && date -d @$(stat -c %Y "$1")
   [[ "${platform}" == "BSD" ]] && date -r $(stat -f "%m" "$1")
+}
+
+dver(){
+  [[ -d "$1" ]]
+}
+
+fver(){
+  [[ -f "$1" ]]
 }
 
 gfx(){
@@ -332,6 +340,11 @@ init(){
   pmprompt="${DARKGRAY}[${MAGENTA}pm-viewer${DARKGRAY}]${DEF}"
   pmprompt_noformatting="[pm-viewer]"
 
+  dver maps || mkdir maps
+  ! dver maps && echo -e "$pmprompt FATAL: Directory maps does not exist and could not be created" && exit
+  dver tmp || mkdir tmp
+  ! dver tmp && echo -e "$pmprompt FATAL: Directory tmp does not exist and could not be created" && exit
+
   current_map_prefix="$pmprompt_noformatting @ $(hostname) - Map: "
   current_map_prefix_length="${#current_map_prefix}"
   current_map_prefix="$pmprompt @ $(hostname) - Map: "
@@ -345,6 +358,8 @@ init(){
   gfx render_map_name "(initializing)"
   gfx render_current_time
   gfx render_last_updated
+
+
 
 }
 
@@ -360,6 +375,7 @@ init
 while true; do
   unset map_no
   for map in maps/*; do
+    ! fver "$map" && reset && echo -e "$pmprompt FATAL: Error reading map. Is the maps dir empty?" && exit
     (( map_no++ ))
     adaptive_wait
     map process "$map"
